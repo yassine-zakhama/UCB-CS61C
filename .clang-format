@@ -1,0 +1,20 @@
+BasedOnStyle: LLVM
+Language: C
+
+UseTab: Always
+IndentWidth: 4
+TabWidth: 4
+
+BreakBeforeBraces: Attach
+
+PointerAlignment: Left
+
+IndentCaseLabels: true
+
+AllowShortIfStatementsOnASingleLine: false
+AllowShortBlocksOnASingleLine: false
+
+BraceWrapping:
+  AfterControlStatement: false
+  AfterFunction: false
+  BeforeElse: false
