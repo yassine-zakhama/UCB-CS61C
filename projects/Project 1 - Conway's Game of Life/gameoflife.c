@@ -14,23 +14,60 @@
 
 #include "imageloader.h"
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-// Determines what color the cell at the given row/col should be. This function
-// allocates space for a new Color. Note that you will need to read the eight
-// neighbors of the cell in question. The grid "wraps", so we treat the top row
-// as adjacent to the bottom row and the left column as adjacent to the right
-// column.
-Color* evaluateOneCell(Image* image, int row, int col, uint32_t rule) {
-	// YOUR CODE HERE
+enum { N_NEIGHBORS = 8 };
+
+Color evaluateOneCell(Image* image, int row, int col, uint32_t rule) {
+	uint32_t upper_row = row == 0 ? image->rows - 1 : row - 1;
+	uint32_t lower_row = row == image->rows - 1 ? 0 : row + 1;
+	uint32_t left_col = col == 0 ? image->cols - 1 : col - 1;
+	uint32_t right_col = col == image->cols - 1 ? 0 : col + 1;
+
+	Color neighbors[N_NEIGHBORS] = {image->image[row][left_col],
+		image->image[row][right_col],
+		image->image[upper_row][col],
+		image->image[lower_row][col],
+		image->image[upper_row][left_col],
+		image->image[upper_row][right_col],
+		image->image[lower_row][left_col],
+		image->image[lower_row][right_col]};
+
+	uint8_t n_alive_neighbors = 0;
+	for (uint8_t i = 0; i < N_NEIGHBORS; ++i) {
+		if (neighbors[i].R != 0) {
+			++n_alive_neighbors;
+		}
+	}
+
+	bool cell_alive = image->image[row][col].R != 0;
+
+	// Rule lookup:
+	// bits 0–8  → dead cell with N neighbors
+	// bits 9–17 → alive cell with N neighbors
+	uint8_t bit_index = cell_alive ? (9 + n_alive_neighbors) : n_alive_neighbors;
+	bool next_alive = (rule >> bit_index) & 1;
+
+	Color result;
+	result.R = result.G = result.B = next_alive ? 255 : 0;
+	return result;
 }
 
-// The main body of Life; given an image and a rule, computes one iteration of
-// the Game of Life. You should be able to copy most of this from
-// steganography.c
 Image* life(Image* image, uint32_t rule) {
-	// YOUR CODE HERE
+	Image* new_image = malloc(sizeof(Image));
+	new_image->cols = image->cols;
+	new_image->rows = image->rows;
+	new_image->image = malloc(image->rows * sizeof(Color*));
+	for (int i = 0; i < image->rows; ++i) {
+		new_image->image[i] = malloc(image->cols * sizeof(Color));
+
+		for (int j = 0; j < image->cols; ++j) {
+			new_image->image[i][j] = evaluateOneCell(image, i, j, rule);
+		}
+	}
+	return new_image;
 }
 
 /*
@@ -50,5 +87,11 @@ Make sure to free all memory before returning!
 You may find it useful to copy the code from steganography.c, to start.
 */
 int main(int argc, char** argv) {
-	// YOUR CODE HERE
+	uint32_t rule = strtol(argv[2], NULL, 16);
+	Image* image = readData(argv[1]);
+	Image* transformed_image = life(image, rule);
+	writeData(transformed_image);
+	freeImage(image);
+	freeImage(transformed_image);
+	return 0;
 }

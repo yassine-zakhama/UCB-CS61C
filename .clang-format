@@ -4,11 +4,9 @@ Language: C
 UseTab: Always
 IndentWidth: 4
 TabWidth: 4
-
-BreakBeforeBraces: Attach
-
 PointerAlignment: Left
 
+BreakBeforeBraces: Attach
 IndentCaseLabels: true
 
 AllowShortFunctionsOnASingleLine: false
@@ -22,4 +20,11 @@ BraceWrapping:
 
 KeepEmptyLinesAtTheStartOfBlocks: false
 
-ColumnLimit: 110
+ColumnLimit: 120
+
+BinPackArguments: false
+BinPackParameters: false
+AlignAfterOpenBracket: DontAlign
+AlwaysBreakBeforeMultilineInitializers: true
+AllowAllConstructorInitializersOnNextLine: false
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
