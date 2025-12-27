@@ -1,0 +1,72 @@
+Basic job of a CPU: execute instructions
+Instruction: like a sentence: operations (verbs) applied to operands (objects) processed in sequence
+Different CPUs implement different sets of instructions. The set of instructions a particular CPU implements is an "Instruction Set Architecture" (ISA)
+	Examples: ARM (cell phones), Intel x86 (i9, i7, i5, i3), RISC-V, ...
+
+Instruction Set Architectures:
+	- Early trend was to add more and more instructions to new CPUs to do elaborate operations (CISC)
+		VAX architecture had an instruction to multiply polynomials!
+
+	- RISC philosophy - Reduced Instruction Set Computing
+		Keep the instruction set small and simple, makes it easier to build fast hardware
+		Let software do complicated operations by composing simpler ones
+
+Instruction set for a particular architecture (e.g. RISC-V) is represented by the assembly language
+Each line of assembly code represents one instruction for the computer (to execute)
+
+Assembly Variables = Registers:
+	Unlike HLL like C or Java, assembly cannot use variables (to keep hardware simple)
+
+	Assembly operands are registers ...
+		limited number of special locations build directly into the hardware
+		operations can only be performed on these
+		since directly in hardware -> very fast (faster than 0.25 ns)
+
+	Drawback: since registers are deep in the hardware (next to the execution cores), there is a predetermined number of them
+		-> code must be carefully put  together to efficiently use them
+	32 registers in RISC-V (smaller is faster, but too small is bad)
+	Each RISC-V register is 32 bits wide (in RV32 variant)
+		Group of 32 bits called a word
+
+	Registers are numbered from 0 to 31
+		referred to by number x0 - x31
+	x0 is special, always holds value zero (zero appears very often in code and want it to be close to the processor)
+		-> only 31 registers available
+	Register can be referred to by number or name
+
+	Unlike C, in assembly, the registers have no type
+		operation (verb) determines how register contents are treated
+
+Make your code more readable: comments (# in RISC-V)
+
+Addition and Subtraction of Integers:
+	verb	destination		source1		source2
+	add 	x1, 			x2, 		x3
+	sub 	x1, 			x2, 		x3
+
+	More complex operations?
+		e.g. a = b + c + d - e
+		-> break into multiple instructions
+			add x10, x1, x2
+			add x10, x10, x3
+			add x10, x10, x4
+		-> a single line of C may break up into several lines of RISC-V
+
+Numerical Constants - "Immediates"
+	They appear often in code, so there are special instructions for them
+
+	- Add immediate:
+		addi x1, x2, 10
+		f = g + 10 (in C)
+
+	There is no subtract immediate in RISC-V, because we don't need it
+		RISC wants to minimize operations!
+		We can instead: add x1, x2, -10
+
+Register zero:
+	One particular immediate, the number 0, appears very often in code
+	Register x0 is "hard-wired" to value 0
+		e.g. add x1, x2, x0
+		this simply moves the content of register x2 to register x1
+
+	If you try to use x0 as a destination, it will do no nothing! It is defined in hardware
