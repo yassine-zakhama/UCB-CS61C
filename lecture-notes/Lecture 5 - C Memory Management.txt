@@ -1,0 +1,132 @@
+sizeof(x) takes variable or type as input
+
+int arr[3];
+sizeof(arr); -> 12
+... as well for arrays whose size is determined at run-time
+
+Dynamic Memory Allocation:
+	To allocate room for something new to point to, use malloc(), with the help of a typecast and sizeof
+
+	malloc() takes in the number of bytes you want, and returns a pointer to uninitialized space, it also returns a (void *) that has to be casted
+
+	ptr = (int *) malloc(n * sizeof(int));
+	this allocates an array of n integers
+
+	Once malloc() is called, the memory location contains garbage
+
+	After dynamically allocating space, we must dynamically free it: free(ptr)
+	Use this command to clean up
+	- Even though the program frees all memory on exit (or when main returns), don't be lazy
+	- You never know when your main will get transformed into a subroutine
+
+	The following two things will cause your program to crash or behave strangely later on, and cause VERY VERY hard to figure out bugs:
+		- freeing the same piece of memory twice
+		- calling free() on something you did not get back from malloc()
+			- e.g. if you move the pointer you cannot call free() on the new pointer, you have to call free on the exact address passed back from malloc
+
+		The runtime does not check for these mistakes (C is too fast / performance critical)
+			- Memory allocation is so performance critical that there just isn't time to do this
+			- The usual result is that you corrupt the memory allocator's internal structure
+			- You won't find out until much later on, in a totally unrelated part of your code!
+
+Managing the Heap: realloc(p, size), used to make something bigger/smaller
+	Resize a previously allocated block at p (also takes the original pointer/address) to a new size
+	If p is NULL, the realloc behaves like malloc
+	If size is 0, then realloc behaves like free, deallocating the block from the heap
+	Returns a new address of the memory block; NOTE: it is likely to have moved!
+	Returns 0 if there no enough memory -> always check if NULL == p
+
+An array name is not a variable
+
+Memory Locations:
+	struct declaration does not allocate memory, variable declaration does
+
+	C has 3 pools of memory:
+		- Static storage: global variable storage, basically permanent, entire program run (you can change the value but not the size of the variable)
+		- The stack: local variable storage, parameters, return address (location of "activation records" in java or "stack frame" in C)
+		- The heap (dynamic malloc storage): data lives until deallocated by programmer
+	C requires knowing where objects are in memory, otherwise things don't work as expected
+
+A program's address space contains 4 regions:
+	- stack: local variables, grows downward
+	- heap: space requested for pointers via malloc(); resizes dynamically, grows upwards
+	- static data: variables declared outside main, does not grow or shrink
+	- code: loaded when program starts, does not change
+
+
+	------------- <- Memory end
+		stack
+	- - - - - - -
+	/////////////
+	/////////////
+	/////////////	For now, OS somehow prevents accesses between stack and heap. Wait for virtual memory
+	/////////////
+	/////////////
+	- - - - - - -
+		heap
+	-------------
+	 static data
+	-------------
+		code
+	------------- <- Memory start
+
+The stack:
+	- The stack frame includes:
+		- Return "instruction" address
+		- Parameters
+		- Space for other local variables
+	- Stack frames are contiguous blocks of memory; stack pointer tells where top stack frame is
+	- When procedure ends, stack frame is tossed off the stack; frees memory for future stack frames
+
+	---------------
+		frame
+	---------------
+		frame
+
+
+	---------------
+		frame
+	---------------
+		frame
+
+	--------------- <- SP
+
+	When a stack frame is tossed off the stack, the values are not deleted or set to 0, we just move the stack pointer
+	-> if a password was stored there, it will stay there
+
+The heap:
+	Large pool of memory, not allocated in contiguous order
+		- Back to back requests for heap memory could result blocks very far apart
+
+Memory management:
+	- Code, Static storage are easy: they never grow or shrink
+	- Stack space is also easy: stack frames are created and destroyed in FIFO order
+	- Managing the heap is tricky: memory can be allocated/deallocated at any time
+
+Heap management requirements:
+	- Want malloc() and free() to run quickly
+	- Want minimal memory overhead
+	- Want to avoid fragmentation - when most of our free memory is in many small chunks
+		- in this case, we might have many free bytes but not be able to satisfy a large request since the free bytes are not contiguous in memory
+
+Heap:
+	Each block of memory is preceded by a header that has 2 fields:
+		- size of the block
+		- a pointer to the next block
+	All free blocks are kept in a circular linked list, the pointer field is unused in an allocated block
+
+	malloc() searches the free list for a block that is big enough.
+		- If none is found, more memory is requested from the OS. If what it gets can't satisfy the request, it fails.
+			-> at this point malloc walked the whole linked list and found nothing -> it took a long time to return NULL, we payed the price in terms of clock cycles to get nothing
+	free() checks if the blocks adjacent to the freed block are also free
+		- if so, adjacent free blocks are merged (coalesced) into a single, larger free block
+		- otherwise, freed block is just added to the free list
+
+	That's why heap is slow
+
+	Choosing a block in malloc():
+		- If there are multiple free blocks of memory that are big enough for some request, how do we choose which one to use?
+			- best-fit: choose the smallest block that is big enough for the request
+			- first-fit: choose the first block we see that is big enough
+			- next-fit: like first-fit but remember where we finished searching and resume searching from otherwise
+
