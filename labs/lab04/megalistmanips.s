@@ -45,8 +45,21 @@ main:
     li a0, 10
     ecall
 
+# struct node {
+#     int *arr;
+#     int size;
+#     struct node *next;
+# };
+
+# void map(struct node *head, int (*f)(int)) {
+#     if (!head) { return; }
+#     for (int i = 0; i < head->size; i++) {
+#       head->arr[i] = f(head->arr[i]);
+#     }
+#     map(head->next, f);
+# }
 map:
-    addi sp, sp, -12
+    addi sp, sp, -24
     sw ra, 0(sp)
     sw s1, 4(sp)
     sw s0, 8(sp)
@@ -63,30 +76,37 @@ map:
     # - 4 more for the pointer to the next node
 
     # also keep in mind that we should not make ANY assumption on which registers
-    # are modified by the callees, even when we know the content inside the functions 
+    # are modified by the callees, even when we know the content inside the functions
     # we call. this is to enforce the abstraction barrier of calling convention.
 mapLoop:
-    add t1, s0, x0      # load the address of the array of current node into t1
+    lw t1, 0(s0)        # load the address of the array of current node into t1
     lw t2, 4(s0)        # load the size of the node's array into t2
 
-    add t1, t1, t0      # offset the array address by the count
+    slli t3, t0, 2
+    add t1, t1, t3      # offset the array address by the count
     lw a0, 0(t1)        # load the value at that address into a0
 
+    sw t0, 12(sp)
+    sw t1, 16(sp)
+    sw t2, 20(sp)
     jalr s1             # call the function on that value.
+    lw t2, 20(sp)
+    lw t1, 16(sp)
+    lw t0, 12(sp)
 
     sw a0, 0(t1)        # store the returned value back into the array
     addi t0, t0, 1      # increment the count
     bne t0, t2, mapLoop # repeat if we haven't reached the array size yet
 
-    la a0, 8(s0)        # load the address of the next node into a0
-    lw a1, 0(s1)        # put the address of the function back into a1 to prepare for the recursion
+    lw a0, 8(s0)        # load the address of the next node into a0
+    add a1, s1, x0      # put the address of the function back into a1 to prepare for the recursion
 
     jal  map            # recurse
 done:
     lw s0, 8(sp)
     lw s1, 4(sp)
     lw ra, 0(sp)
-    addi sp, sp, 12
+    addi sp, sp, 24
     jr ra
 
 mystery:
@@ -96,11 +116,11 @@ mystery:
 
 create_default_list:
     addi sp, sp, -4
-    sw ra, 0(sp)
-    li s0, 0  # pointer to the last node we handled
-    li s1, 0  # number of nodes handled
-    li s2, 5  # size
-    la s3, arrays
+    sw   ra, 0(sp)
+    li   s0, 0          # pointer to the last node we handled
+    li   s1, 0          # number of nodes handled
+    li   s2, 5          # size
+    la   s3, arrays
 loop: #do...
     li a0, 12
     jal malloc      # get memory for the next node
@@ -126,7 +146,8 @@ loop: #do...
     addi sp, sp, 4
     jr ra
 
-fillArray: lw t0, 0(a1) #t0 gets array element
+fillArray:
+    lw t0, 0(a1) #t0 gets array element
     sw t0, 0(a0) #node->arr gets array element
     lw t0, 4(a1)
     sw t0, 4(a0)

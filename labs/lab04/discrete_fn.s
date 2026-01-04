@@ -77,7 +77,14 @@ main:
 # Think: why might having a1 be useful?
 f:
     # YOUR CODE GOES HERE!
+    mv t0, a0,      # t0 is index of element
+    addi t0, t0, 3
+    slli t0, t0, 2
 
+    la t1, output       # t1 address of output array
+    add t1, t1, t0      # offset the array address by the count
+
+    lw a0, 0(t1)
     jr ra               # Always remember to jr ra after your function!
 
 print_int:
