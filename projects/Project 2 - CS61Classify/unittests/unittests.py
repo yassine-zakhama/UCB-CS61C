@@ -67,6 +67,14 @@ class TestRelu(TestCase):
         t.call("relu")
         t.execute(code=78)
 
+    def test_negative_size(self):
+        t = AssemblyTest(self, "relu.s")
+        array = t.array([])
+        t.input_array("a0", array)
+        t.input_scalar("a1", -1)
+        t.call("relu")
+        t.execute(code=78)
+
     @classmethod
     def tearDownClass(cls):
         print_coverage("relu.s", verbose=False)

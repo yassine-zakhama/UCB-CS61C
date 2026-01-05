@@ -13,7 +13,7 @@
 #   this function terminates the program with error code 78.
 # ==============================================================================
 relu:
-    beq a1, zero, exit_with_78
+    ble a1, zero, exit_with_78
 
     li t0, 0            # counter
 
