@@ -164,6 +164,22 @@ classify:
     jal print_char
 
 done:
+    # free memory
+    mv a0, s2
+    jal free
+    mv a0, s3
+    jal free
+    mv a0, s4
+    jal free
+    mv a0, s5
+    jal free
+    mv a0, s6
+    jal free
+    mv a0, s7
+    jal free
+    mv a0, s8
+    jal free
+
     # Epilogue
     lw s8, 36(sp)
     lw s7, 32(sp)
