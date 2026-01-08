@@ -1,0 +1,104 @@
+Synchronous Digital Systems
+    Hardware of a processor, e.g., RISC-V, is a Synchronous Digital System
+    - Synchronous:
+        All operations coordinated by a central clock
+        "Heartbeat" of the system!
+        4 GHz means 4 billion times a second (clock goes 1,0 4 billion times a second)
+    - Digital:
+        All values represented by discrete values
+        Electrical signals are treated as 1s and 0s; grouped together to form words
+        -> take real world analog values (e.g. voltage) and quantize them to be a 0 or a 1 (that is where a bit comes from)
+
+Logic Design
+    We’ll study how a modern processor is built; starting with basic elements as building blocks
+    Why study hardware design?
+        - Understand capabilities and limitations of hw in general and processors in particular
+        - What processors can do fast and what they can’t do fast (avoid slow things if you want your code to run fast!)
+
+Switches: Basic Element of Physical Circuit
+    Implementing a simple circuit:
+        Close switch when A is 1, open when A is 0
+
+    Assert A = close A -> A is 1 / asserted
+    Unassert A = open A -> A is 0 / unasserted
+
+    We can compose switches into more complex ones:
+
+        AND:    ___/ ___/ __
+
+                __/ __
+        OR:     __|      |__
+                |__  __|
+                    \
+
+Transistors:
+    Semiconductor device to AMPLIFY or SWITCH signals
+        Key component in all modern electronics
+
+    Transistor Networks:
+        Modern digital systems designed in CMOS
+            MOS: Metal-Oxide on Semiconductor
+            C for complementary: normally-open and normally-closed switches
+            MOS transistors act as voltage-controlled switches
+
+    MOS Transistors
+        3 Terminals: Drain, Gate, Source
+        Switch action:  if voltage on gate terminal is (some amount) higher/lower than source terminal then conducting
+                        path established between drain and source terminals
+
+        - n-channel: open when voltage at G is low, closes when voltage(G) > voltage (S) + e
+        - p-channel: n-channel complement: closed when voltage at G is low, opens when voltage(G) > voltage (S) + e
+
+    Transistor Circuit Rep. vs. Block diagram
+        Chips are composed of nothing but transistors and wires.
+        Small groups of transistors form useful building blocks.
+        Block are organized in a hierarchy to build higher-level blocks: ex: adders.
+        You can build AND, OR, NOT out of NAND!
+
+Signals and Waveforms: Clocks
+    T = 1 / freq
+
+    Signals:
+        - When digital is only treated as 1 or 0
+        - Is transmitted over wires continuously
+        - Transmission is effectively instant
+        - Implies that a wire contains 1 value at a time
+
+    Problem: Real world values (e.g. voltage) are noisy, and delayed (not synchronized with a clock)
+
+    Propagation delay is the time it takes for a signal change at the input of a system to produce a corresponding change at the output.
+        Measured in nanoseconds (ns) or picoseconds (ps)
+        Example: If an inverter’s input changes at time t, and the output changes at t + 2 ns, the propagation delay = 2 ns.
+        Where it matters:
+            Logic gates: each gate has a non-zero propagation delay
+            Combinational circuits: total delay = sum of gate delays on the critical path
+            Clock frequency:
+                Max clock speed is limited by propagation delay
+                Clock period ≥ longest propagation delay
+
+    Type of circuits
+        Synchronous Digital Systems are made up of two basic types of circuits:
+            Combinational Logic (CL) circuits
+                E.g.: adder circuit
+                Output is a function of the inputs only.
+                Similar to a pure function in mathematics, y = f(x). (No way to store information from one
+                    invocation to the next. No side effects)
+            State Elements: circuits that store information.
+                e.g.: registers, caches, memory, disk, ...
+
+        We need both types
+
+        E.g. Register
+
+                           Input                Register ignore input, until load == 1
+                             |                      -> takes input and stores it, holds the state until load is 1 again
+                         ____|_____
+               Load ____|          |            Often (not always), we clock these devices => load == clock
+                        |__________|
+                             |
+                             |
+                           Output
+
+Conclusion:
+    Clocks control pulse of our circuits (they are the heartbeat)
+
