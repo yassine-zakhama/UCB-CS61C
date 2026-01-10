@@ -1,0 +1,137 @@
+When datapath and control are put together they comprise a microprocessor
+
+We need parallelism to achieve high performance
+Hardware descriptions are parallel by nature, all the gates work in parallel at some time the whole time.
+The functional units that are built out of these gates also operate in parallel
+We also can have multiple functional units execute instructions in parallel
+
+We can have multiple implementations of the RISC-V ISA, but they all have to be able to execute the binary code
+
+Inside the processor there are 2 main parts that communicate with each other:
+- Control
+- Datapath (PC + Registers + ALU)
+
+The processor and the memory communicate with each other. Memory communicates with I/O
+
+CPU:
+    Processor (CPU): the active part of the computer that does all the work (data manipulation and decision-making)
+        Datapath (also called "the brawn"): portion of the processor that contains hardware necessary to perform operations required by the processor
+            We don't build a datapath for every instruction, we build one datapath that is able to execute all instructions (in our case all RV32I instructions)
+        Control (also called "the brain"): portion of the processor (also in hardware) that tells the datapath what needs to be done The CPU
+            Controls the datapath: tells it how to set itself to execute each instruction correctly
+
+We can view a CPU design as a design of a state machine
+
+One-Instruction-Per-Cycle RISC-V Machine
+    On every tick of the clock, the computer executes one instruction
+    Current state outputs drive the inputs to the combinational logic, whose outputs settles at the values of the state before the next clock edge
+    At the rising clock edge, all the state elements are updated with the combinational logic outputs, and execution moves to the next clock cycle
+
+Stages of the Datapath : Overview
+    Problem: a single, “monolithic” block that “executes an instruction” (performs all necessary operations beginning with fetching the instruction)
+    would be too bulky and inefficient
+
+    Solution: break up the process of “executing an instruction” into stages, and then connect the stages to create the whole datapath
+    – smaller stages are easier to design
+    – easy to optimize (change) one stage without touching the others (modularity)
+
+Five Stages of the Datapath
+    Stage 1: Instruction Fetch (IF)
+        Get instruction from memory and store it in processor
+    Stage 2: Instruction Decode (ID)
+        Look at instruction and determine what it is
+    Stage 3: Execute (EX) - ALU (Arithmetic-Logic Unit)
+        Perform the operation, commonly done by ALU. ALU can also be used for branching
+    Stage 4: Memory Access (MEM)
+        If the instruction has something to do with memory (loads/stores)
+    Stage 5: Write Back to Register (WB)
+        If we need to write back the content to the registers (loads)
+
+Basic Phases of Instruction Execution
+    IMEM and DMEM are part of the same physical memory, but we treat these parts separately
+
+    PC -> IMEM (instruction memory) -> Reg[] -> ALU -> DMEM (Data memory) -> Reg[]
+
+    --------------->--------------------->-------->---------->---------------->
+        stage 1             stage 2        stage 3   stage 4      stage 5
+
+clk:_____________________________________                                       _______
+___/                                     \_____________________________________/
+
+    -> single cycle datapath: all 5 phases of execution happen within 1 clk cycle
+
+Datapath Components: Combinational
+    Combinational elements (adder, mux, ALU)
+    Storage elements + clocking methodology
+    Building blocks
+
+Datapath Elements: State and Sequencing
+    Register:
+        A collection of flip-flops
+
+        Write Enable:
+            Low (or deasserted) (0): Data Out will not change
+            Asserted (1): Data Out will become Data In on positive edge of clock
+        N:
+            In 32 bit datapaths, N == 32
+
+    Register File (RF):
+        A collection of registers
+        In RV32I, consists of 32 registers:
+            Two 32-bit output busses: busA and busB
+            One 32-bit input bus: busW
+
+        Register is selected by:
+        - RA (number) selects the register to put on busA (data)
+        - RB (number) selects the register to put on busB (data)
+        - RW (number) selects the register to be  written via busW (data) when Write Enable is 1
+
+        Clock input (Clk):
+            Clk input is a factor ONLY during write operation
+            During read operation, behaves as a combinational logic block:
+                RA or RB valid ⇒ busA or busB valid after "access time" delay
+
+    "Magic" Memory
+        One input bus: Data In
+        One output bus: Data Out
+
+        Memory word is found by:
+        - For Read: Address selects the word to put on Data Out
+        - For Write: Set Write Enable = 1: address selects the memory word to be written via the Data In bus
+
+        Clock input (CLK)
+            CLK input is a factor ONLY during write operation
+            During read operation, behaves as a combinational logic block: Address valid ⇒ Data Out valid after "access time" delay
+
+State required by RV32I ISA
+    Each instruction during execution reads and updates the state of : (1) Registers, (2) Program counter, (3) Memory
+    - Registers (x0..x31)
+        Register file (regfile) Reg holds 32 registers x 32 bits/register: Reg[0]..Reg[31]
+        First register read specified by rs1 field in instruction
+        Second register read specified by rs2 field in instruction
+        Write register (destination) specified by rd field in instruction
+        x0 is always 0 (writes to Reg[0]are ignored)
+    - Program Counter (PC)
+        Holds address of current instruction
+    - Memory (MEM)
+        Holds both instructions & data, in one 32-bit byte-addressed memory space
+        We’ll use separate memories for instructions (IMEM) and data (DMEM)
+            These are placeholders for instruction and data caches
+        Instructions are read (fetched) from instruction memory (assume IMEM read-only)
+        Load/store instructions access data memory
+
+Implementing R-Format Instructions: (add, sub, sll, and, or, ...)
+    All implemented by decoding funct3 and funct7 fields and selecting appropriate ALU function: done by Control part, it sets the signal for ALU
+
+Implementing I-Format Instructions: (addi, slli, andi, ...)
+    In the old datapath, we have DataB connected instead of the immediate. We could build a new a new datapath that supports immediate;
+    replace DataB with the immediate. But we want a single datapath that supports R-type and I-types
+        -> put a mux between DataB and ALU (controlled by Control); if asserted take immediate otherwise take DataB
+    We also need to get the (12-bit) immediate from somewhere
+        -> Imm. Gen (of I type, because different instruction types have different encoding for immediates) between IMEM and mux (also controlled by Control)
+
+    I-Format Immediates
+        High 12 bits of instruction (inst[31:20]) copied to low 12 bits of immediate (imm[11:0])
+        Immediate is sign-extended by copying value of inst[31] to fill the upper 20 bits of the immediate value (imm[31:12])
+
+        In general: we are going to be using muxes to support different types of immediates when we introduce them
