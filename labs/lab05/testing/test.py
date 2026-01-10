@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 import os.path
@@ -37,9 +37,9 @@ class TestCase():
       reference = open(self.tracefile)
       passed = compare_unbounded(proc.stdout,reference, filename)
     finally:
-      try: 
+      try:
         os.kill(proc.pid,signal.SIGTERM)
-      except Exception as e: 
+      except Exception as e:
         pass
     if passed:
       return (True, "Matched expected output")
@@ -77,10 +77,10 @@ def run_tests(tests):
     else:
       print("\tFAILED test: %s (%s)" % (description, reason))
       tests_failed += 1
-  
+
   print("Passed %d/%d tests" % (tests_passed, (tests_passed + tests_failed)))
 
-tests = [
+tests1 = [
   ("Exercise 1 (Sub-Circuits) test", "student_output/ex1_test.out",TestCase(os.path.join(file_locations,'circ_files/ex1_test.circ'), os.path.join
 (file_locations,'reference_output/ex1_test.out'), "")),
   ("Exercise 2 (Add Machine) test", "student_output/ex2_test.out",TestCase(os.path.join(file_locations,'circ_files/ex2_test.circ'), os.path.join
@@ -94,4 +94,4 @@ tests = [
 ]
 
 if __name__ == '__main__':
-  run_tests(tests)
+  run_tests(tests1)
