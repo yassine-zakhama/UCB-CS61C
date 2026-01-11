@@ -1,0 +1,41 @@
+Supporting loads (part of I-Format; lw, lb, ...)
+    adding lw:
+        The 12-bit signed immediate is added to the base address in register rs1 to form the memory address
+            This is very similar to the add-immediate operation but used to create address not to create final result
+        The value loaded from memory is stored in register rd
+
+        -> add DMEM that takes ALU output as input (rs1 + immediate) and a mux between ALU output and DMEM output
+
+        Supporting the narrower loads requires additional logic to extract the correct byte/halfword from the value loaded from memory,
+        and sign- or zero-extend the result to 32 bits before writing back to register file.
+            It is just a mux + a few gates
+
+Implementing S-Formats (sw, sb, ...)
+    We need a different type of imm gen
+
+    DMEM needs a new port DataW which is the DataB output of Reg[]
+
+    The ImmSel from control selects a new type of imm: S
+
+    I+S Immediate Generation
+        Immediate generation unit needs to be updated
+
+        Just need a 5-bit mux to select between two positions where low five bits of immediate can reside in instruction
+        Other bits in immediate are wired to fixed positions in instruction
+
+Implementing B-formats (branches: bne, blt, ...)
+    B-format is mostly same as S-Format, with two register sources (rs1/rs2) and a 12-bit immediate imm[12:1]
+    But now immediate represents values -4096 to +4094 in 2-byte increments
+    The 12 immediate bits encode even 13-bit signed byte offsets (lowest bit of offset is always zero, so no need to store it)
+
+    We need to do 2 things simultaneously, for which we'll need resources:
+    - Branch condition evaluation
+    - Computation of new address
+
+    To add branches:
+        Different change to the state:
+            PC =  PC + 4, branch not taken
+            PC + immediate, branch taken
+        Six branch instructions: beq, bne, blt, bge, bltu, bgeu
+        Need to compute PC + immediate and to compare values of rs1 and rs2
+            But have only one ALU – need more hardware
