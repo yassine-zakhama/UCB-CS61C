@@ -1,0 +1,74 @@
+Kilo, Mega, Giga, Tera, Peta, Exa, Zetta, Yot
+    Network transmission is base 10 (e.g. a 1 MBbit/s connection transfers 10^6 bits per second)
+    Also hard drives
+    Everything else (caches, memory, ...) is base 2
+        -> 1 KB = 2^10 = 1024
+
+
+What we want is a large, yet fast memory
+    Problems:
+        The bigger the slower
+        The farther the slower
+
+Processor-DRAM Gap
+    1980 microprocessor executes ~one instruction in same time as DRAM access
+    2020 microprocessor executes ~1000 instructions in same time as DRAM access
+        CPU is sitting idle 1000 instructions waiting for RAM!
+    -> Slow DRAM access has disastrous impact on CPU performance!
+
+Memory Caching
+    Mismatch between processor and memory speeds leads us to add a new level…
+        Introducing a “memory cache” <- a BIG idea in computer science!
+    Implemented with same IC processing technology as the CPU (usually integrated on same chip)
+        faster but more expensive than DRAM memory.
+    IMPORTANT: Cache is a copy of a subset of main memory
+        Applicable for all levels!
+            -> CPU registers have copy of subset of caches
+            -> Caches has copy of subset of RAM
+            -> RAM has copy of subset of disk (reminder: loader)
+    Most processors have separate caches for instructions and data.
+
+The big idea:
+    present processor with as much memory as is available in the cheapest technology at the speed offered by the fastest technology
+
+Memory hierarchy:
+    If level closer to Processor, it is:
+        Smaller
+        Faster
+        More expensive
+        subset of lower levels (contains most recently used data)
+    Lowest Level (usually disk=HDD/SSD) contains all available data (does it go beyond the disk?)
+    Memory Hierarchy presents the processor with the illusion of a very large & fast memory
+
+Locality
+    Caches work on the principles of temporal and spatial locality.
+        Temporal locality (locality in time): If we use it now, chances are we’ll want to use it again soon.
+        Spatial locality (locality in space): If we use a piece of memory, chances are we’ll use the neighboring pieces soon.
+
+    What to do about locality?
+    - Temporal Locality
+        If a memory location is referenced then it will tend to be referenced again soon
+        => Keep most recently accessed data items closer to the processor
+    - Spatial Locality
+        If a memory location is referenced, the locations with nearby addresses will tend to be referenced soon
+        => Move blocks consisting of contiguous words closer to the processor
+
+Cache design
+    How do we organize cache?
+    Where does each memory address map to?
+        (Remember that cache is subset of memory, so multiple memory addresses map to the same cache location.)
+    How do we know which elements are in cache?
+    How do we quickly locate them?
+
+How is the hierarchy managed?
+    register <-> memory
+        by compiler (or assembly level programmer)
+    cache <-> main memory
+        by the cache controller hardware
+    main memory <-> disks (secondary storage)
+        By the operating system (virtual memory)
+        Virtual to physical address mapping assisted by the hardware (‘translation lookaside buffer’ or TLB) <- also a type of cache
+        By the programmer (files)
+
+In conclusion:
+    Caches provide an illusion to the processor that the memory is infinitely large and infinitely fast
