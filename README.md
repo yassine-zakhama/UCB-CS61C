@@ -1,6 +1,4 @@
-# UCB-CS61C
-
----
+# UCB-CS61C - Great Ideas in Computer Architecture
 
 ### Disclaimer
 
