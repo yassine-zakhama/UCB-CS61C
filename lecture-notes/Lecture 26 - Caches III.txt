@@ -1,0 +1,90 @@
+What to do on a write hit?
+    - either: Write-through
+        Update both cache and memory
+    - or: Write-back (data inconsistency is a feature; part of the design)
+        update word in cache block
+        allow memory word to be "stale" (inconsistent)
+        add ‘dirty’ bit to block
+            memory & Cache inconsistent
+            needs to be updated when block is replaced
+        …OS flushes cache before I/O…
+    Performance trade-offs?
+
+Block Size Tradeoff
+    Benefits of Larger Block Size
+        Spatial Locality: if we access a given word, we’re likely to access other nearby words soon
+        Very applicable with Stored-Program Concept
+        Works well for sequential array accesses
+
+    Drawbacks of Larger Block Size
+        Larger block size means larger miss penalty
+            on a miss, takes longer time to load a new block from next level
+        If block size is too big relative to cache size, then there are too few blocks
+            Result: miss rate goes up
+
+        Example: badly written code: stride = cache size -> cache miss every time
+
+Extreme Example: One Big Block
+    Cache Size = 4 bytes Block Size = 4 bytes
+        Only ONE entry (row) in the cache!
+    If item accessed, likely accessed again soon
+        But unlikely will be accessed again immediately!
+    The next access will likely to be a miss again
+        Continually loading data into the cache but discard data (force out) before use it again
+    Nightmare for cache designer: Ping Pong Effect
+
+Types of Cache Misses
+    Three Cs Model of Misses
+    - 1st C: Compulsory Misses (cold cache)
+        occur when a program is first started
+        cache does not contain any of that program’s data yet, so misses are bound to occur
+        can’t be avoided easily, so won’t focus on these in this course
+        Every block of memory will have one compulsory miss (NOT only every block of the cache)
+
+    - 2nd C: Conflict Misses
+        miss that occurs because two distinct memory addresses map to the same cache location
+            two blocks (which happen to map to the same location) can keep overwriting each other
+            big problem in direct-mapped caches
+            how do we lessen the effect of these?
+
+        Dealing with Conflict Misses
+            Solution 1: Make the cache size bigger
+                Fails at some point
+            Solution 2: Multiple distinct blocks can fit in the same cache Index?
+
+Fully Associative Caches
+    The extreme opposite of direct mapped: everything can go anywhere
+
+    Memory address fields:
+        Tag: same as before
+        Offset: same as before
+        Index: non-existant
+
+    What does this mean?
+        no “rows”: any block can go anywhere in the cache
+        must compare with all tags in entire cache to see if data is there
+
+    Ex: 32 B block
+        compare tags in parallel!
+
+        tag: 27 bits
+        offset 4 bits
+
+    Benefit of Fully Assoc Cache
+        No Conflict Misses (since data can go anywhere)
+    Drawbacks of Fully Assoc Cache
+        Need hardware comparator for every single entry: if we have a 64KB of data in cache with 4B entries, we need 16K comparators: infeasible
+            -> but in software totally feasible
+
+Final Type of Cache Miss
+    - 3rd C: Capacity Misses
+        miss that occurs because the cache has a limited size
+        miss that would not occur if we increase the size of the cache
+        sketchy definition, so just get the general idea
+    This is the primary type of miss for Fully Associative caches.
+
+How to categorize misses
+    Run an address trace against a set of caches:
+        First, consider an infinite-size, fully-associative cache. For every miss that occurs now, consider it a compulsory miss.
+        Next, consider a finite-sized cache (of the size you want to examine) with full-associativity. Every miss that is not in #1 is a capacity miss.
+        Finally, consider a finite-size cache with finite associativity. All of the remaining misses that are not #1 or #2 are conflict misses.
