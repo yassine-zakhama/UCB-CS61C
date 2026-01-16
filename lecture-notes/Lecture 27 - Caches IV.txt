@@ -1,0 +1,97 @@
+Set-Associative Caches
+    Lives somewhere in the middle of fully associative cache (where you can sit anywhere) and direct mapped cache (where you have a ticket for your seat and you sit directly there)
+
+N-Way Set Associative Cache
+    Memory address fields:
+        Tag: same as before
+        Offset: same as before
+        Index: points us to the correct “row” (called a set in this case)
+
+        a set has n items
+            e.g.: 2-way set associative -> 2 blocks live in each set => 4 blocks
+    So what’s the difference?
+        each set contains multiple blocks
+        once we’ve found correct set, must compare with all tags in that set to find our data
+        Size of cache is # sets x N blocks/set x block size
+
+    Basic Idea
+        cache is direct-mapped w/respect to sets
+        each set is fully associative with N blocks in it
+
+    Given memory address:
+        Find correct set using Index value.
+        Compare Tag with all Tag values in that set.
+        If a match occurs, hit!, otherwise a miss.
+        Finally, use the offset field as usual to find the desired data within the block.
+
+    What’s so great about this?
+        even a 2-way set assoc cache avoids a lot of conflict misses
+        hardware cost isn’t that bad: only need N comparators
+
+    In fact, for a cache with M blocks,
+        it’s Direct-Mapped if it’s 1-way set assoc
+        it’s Fully Assoc if it’s M-way set assoc
+        so these two are just special cases of the more general set associative design
+
+Block Replacement Policy
+    Direct-Mapped Cache
+        index completely specifies position which position a block can go in on a miss
+    N-Way Set Assoc
+        index specifies a set, but block can occupy any position within the set on a miss
+    Fully Associative
+        block can be written into any position
+    Question: if we have the choice, where should we write an incoming block?
+        If there’s a valid bit off, write new block into first invalid.
+        If all are valid, pick a replacement policy
+           rule for which block gets “cached out” on a miss.
+
+    LRU (Least Recently Used)
+        Idea: cache out block which has been accessed (read or write) least recently
+        Pro: temporal locality è recent past use implies likely future use: in fact, this is a very effective policy
+        Con: with 2-way set assoc, easy to keep track (one LRU bit); with 4-way or greater, requires complicated hardware and much time to keep track of this
+    FIFO
+        Idea: ignores accesses, just tracks initial order
+    Random
+        If low temporal locality of workload, works ok
+
+Average Memory Access Time (AMAT)
+    Big Idea:
+        How to choose between associativity, block size, replacement & write policy?
+        Design against a performance model
+            Minimize: Average Memory Access Time = Hit Time + Miss Penalty x Miss Rate
+            influenced by technology & program behavior
+        Create the illusion of a memory that is large, cheap, and fast - on average
+        How can we improve miss penalty?
+
+Improving Miss Penalty
+    When caches first became popular, Miss Penalty ~10 processor clock cycles
+    Today 3 GHz Processor (1/3 ns per clock cycle) and 80 ns to go to DRAM ~200 processor clock cycles
+    Solution: another cache between memory and the processor cache: Second Level (L2) Cache
+        AMAT = L1 Hit Time + L1 Miss Rate * L1 Miss Penalty
+            L1 Miss Penalty = L2 Hit Time + L2 Miss Rate * L2 Miss Penalty
+        => Avg Mem Access Time =
+                L1 Hit Time + L1 Miss Rate
+                * (L2 Hit Time + L2 Miss Rate * L2 Miss Penalty)
+
+Ways to reduce miss rate
+    Larger cache
+        limited by cost and technology
+        hit time of first level cache < cycle time (bigger caches are slower)
+    More places in the cache to put each block of memory – associativity
+        fully-associative
+            any block any line
+        N-way set associated
+            N places for each block
+            direct map: N=1
+
+Typical Scale
+    L1
+        size: tens of KB
+        hit time: complete in one clock cycle
+        miss rates: 1-5%
+    L2:
+        size: hundreds of KB
+        hit time: few clock cycles
+        miss rates: 10-20%
+    L2 miss rate is fraction of L1 misses that also miss in L2
+            why so high?
