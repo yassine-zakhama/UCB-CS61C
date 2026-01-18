@@ -1,0 +1,224 @@
+We need to figure out how to enable programs to share 1 single physical memory
+
+Virtual memory:
+    Virtual memory - Next level in the memory hierarchy:
+        Provides program with illusion of a very large main memory:
+        Working set of “pages” reside in main memory - others are on disk
+            The more active ones are put on DRAM
+            -> disk is used as extension for DRAM!
+        Demand paging: Provides the ability to run programs larger than the primary memory (DRAM)
+    Hides differences between machine configurations
+    Also allows OS to share memory, protect programs from each other
+    Today, more important for protection than just another level of memory hierarchy
+        we don't want programs to accidentally or maliciously run over each other's memory space
+    Each process thinks it has all the memory to itself
+    (Historically, it predates caches)
+
+Virtual vs. Physical Addresses
+    Processes use virtual addresses, e.g., 0 … 0xffff,ffff
+        Many processes, all using same (conflicting) addresses
+    Memory uses physical addresses (also, e.g., 0 ... 0xffff,ffff)
+    Memory manager maps virtual to physical addresses
+
+Address Spaces
+    Address space = set of addresses for all available memory locations
+    Now, two kinds of memory addresses:
+        Virtual Address Space
+            Set of addresses that the user program knows about
+        Physical Address Space
+            Set of addresses that map to actual physical locations in memory
+            Hidden from user applications
+    Memory manager maps (‘translates’) between these two address spaces
+
+Memory Hierarchy Requirements
+    Allow multiple processes to simultaneously occupy memory and provide protection – don’t let one program read/write memory from another
+    Address space – give each program the illusion that it has its own private memory
+        Suppose code starts at address 0x40000000. But different processes have different code, both residing at the same address. So each program has a different view of memory.
+
+Memory (DRAM, SRAM)
+    Volatile: when we turn off power, data is lost
+
+    Latency to access first word: ~10ns (~30-40 processor cycles)
+    Each successive 0.5ns – 1ns, if we are writing to nearby location
+    Each access brings 64 bits
+    Supports ‘bursts’, to fill cache line
+
+    DRAM is more volatile than SRAM
+        SRAM retains data as long as the supply is on
+        but DRAM forgets (that's why it is called Dynamic RAM); data is stored dynamically in form of a charge that may leak away from the DRAM cell
+            => need to be refreshed; every few 100s of ms, the controller that lives on the microprocessor accesses DRAM reads the contents and writes it back
+
+Storage - "Disk"
+    Attached as a peripheral I/O device; non-volatile
+
+    2 types:
+    - SSD
+        Access: 40-100µs (~100k proc. cycles)
+    - HDD
+        Access: <5-10ms (10-20M proc. cycles)
+
+    Hard drives are slow because they are mechanical
+
+    What About SSD?
+        Built out of "flash memory"
+        Similar to DRAM except that the technology is different
+            Built out of non-volatile cells => charge is trapped inside the cell
+
+        Made with transistors
+        Nothing mechanical that turns
+        Like “Ginormous” register file
+            Does not ”forget” when power is off (non-volatile)
+        Fast access to all locations, regardless of address
+        Still much slower than register, DRAM
+            Read/write blocks, not bytes
+            Potential reliability issues
+        Some unusual requirements:
+            Can’t erase single bits – only entire blocks
+
+        Because of the trapping of the charge, the flash drives have a limited life time
+            => you can completely erase them only a few 1000 times
+
+In a ‘bare metal’ system (w/o OS), addresses issued with loads/stores are real physical addresses
+    In this mode, any process can issue any address, therefore can access any part of memory, even areas which it doesn’t own
+        Ex: The OS data structures
+    We should send all addresses through a mechanism that the OS controls, before they make it out to DRAM - a translation mechanism
+        Check that process has permission to access a particular part of memory
+100’s of processes
+    OS multiplexes these over available cores (through context switching)
+But what about memory?
+    There is only one!
+    We cannot just ”save” its contents in a context switch ...
+
+Memory Manager
+    maps virtual to physical addresses
+    conceptually, it maps each process to a part of memory
+
+Responsibilities of Memory Manager
+    1. Map virtual to physical addresses
+    2. Protection:
+        Isolate memory between processes
+        Each process gets dedicate ”private” memory
+        Errors in one program won’t corrupt memory of other program
+        Prevent user programs from messing with OS’s memory
+    3. Swap memory to disk
+        Give illusion of larger memory by storing some content on disk
+            since there could be a lot processes, we may run out of DRAM
+        Disk is usually much larger and slower than DRAM
+            => should not happen frequently
+            => Use “clever” caching strategies
+
+Memory Manager and Paged Memory
+    Concept of “paged memory” dominates
+        Physical memory (DRAM) is broken into pages
+            shouldn't be very small because we don't want to frequently go to disk
+            on the other hand we don't want to have a very big chunk that we have to move to disk
+        Typical page size: 4 KiB+ (on modern OSs)
+            Need 12 bits to address 4KiB
+
+    Virtual address (e.g., 32 Bits)
+
+        | page number (e.g., 20 Bits) | offset (e.g., 12 bits) |
+
+        offset: used to address bits within the page
+
+    A process can have multiple pages: together they form a "page table"
+        the pages don't have to be physically consecutive, and not all of them have to be in DRAM: some of them might be swapped to the disk
+        page tables are managed by OS
+
+Paged Memory Address Translation
+    OS keeps track of which process is active
+        Chooses correct page table
+    Memory manager extracts page number from virtual address
+        e.g. just top 20 bits
+    Looks up page address in page table
+    Computes physical memory address from sum of
+        Page address and
+        Offset (from virtual address)
+
+Protection
+    Assigning different pages in DRAM to processes also keeps them from accessing each others memory
+        Isolation
+        Page tables handled by OS (in supervisory mode)
+    Sharing is also possible
+        OS may assign same physical page to several processes
+
+    Write protection
+        Some pages should not be writable
+        => use a bit as a flag
+        Exception when writing to a protected page
+
+Where Do Page Tables Reside?
+    E.g., 32-Bit virtual address, 4-KiB pages
+        Single page table size:
+            4 x 2^20 Bytes = 4-MiB
+            0.1% of 4-GiB memory
+            But much too large for a cache!
+    Store page tables in memory (DRAM)
+        Two (slow) memory accesses per lw/sw on cache miss
+            1. first get page table from memory
+            2. once we have the actual physical address we can perform the load/store
+        How could we minimize the performance penalty?
+            Transfer blocks (not words) between DRAM and processor cache
+                Exploit spatial locality
+            Use a cache for frequently used page table entries …
+
+Blocks vs. Pages
+    In caches, we dealt with individual blocks
+        Usually ~64B on modern systems
+    In virtual memory, we deal with individual pages
+        Usually ~4 KiB on modern systems
+    Common point of confusion:
+        Bytes,
+        Words,
+        Blocks,
+        Pages
+            Are all just different ways of looking at memory!
+
+    Ex: 16 KiB DRAM, 4 KiB Pages (for VM), 128 B blocks (for caches), 4B words (for lw/sw)
+        Can think of memory as:
+        • 4 Pages, or
+        • 128 Blocks, or
+        • 4096 Words, or
+        • 16,384 Bytes
+
+        Can think of a page as:
+        • 32 Blocks, or
+        • 1024 Words
+
+        Each block has 32 words
+
+Paged memory
+    Each process works with it's own page table, the page table has multiple entries that are pointing to pages residing in DRAM or disk
+    Each page table also has status bits:
+        Valid: is page allocated?
+        DRAM or disk?
+        ...
+
+Memory access:
+    Check page table entry:
+        Valid?
+            Yes, valid -> In DRAM?
+                Yes, in DRAM: read/write data
+                No, on disk: allocate new page in DRAM                        <- PAGE FAULT OS INTERVENTION
+                    If out of memory, evict a page from DRAM (usually LRU)
+                    Store evicted page to disk
+                    Read page from disk into memory
+                    Read/write data
+        Not Valid                                                             <- PAGE FAULT OS INTERVENTION
+            allocate new page in DRAM
+                If out of memory, evict a page
+                Read/write data
+
+Page fault
+    Page faults are treated as exceptions
+        Page fault handler (yet another function of the interrupt/trap handler) does the page table updates and initiates transfers
+        Updates status bits
+    If page needs to be swapped from disk, perform context switch to avoid the CPU sitting idle (swapping to disk is too long)
+    Following the page fault, the instruction is re-executed
+
+Write-Through or Write-Back?
+    DRAM acts like “cache” for disk
+        Should writes go directly to disk (write-through)?
+        Or only when page is evicted?
+
+    -> cost of writing data to disk every time is so huge => the only option is write-back + LRU
